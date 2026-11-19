@@ -38,8 +38,8 @@
   .ic{width:40px;height:40px;border-radius:var(--r-cartao);background:var(--pri-bg);color:var(--pri-ic);display:grid;place-items:center;flex:none}
   h1{font-size:20px;font-weight:700;margin:0;letter-spacing:-.01em}
   .sub{color:var(--muted);font-size:13px}
-  form{background:var(--surface);border:1px solid var(--divider);border-radius:var(--r-cartao);
-    padding:14px;display:grid;grid-template-columns:72px 1fr auto;gap:8px}
+  #f{background:var(--surface);border:1px solid var(--divider);border-radius:var(--r-cartao);
+    padding:10px;display:grid;grid-template-columns:1fr 64px 44px;gap:8px}
   label{font-size:12px;font-weight:500;color:var(--muted);display:block;margin-bottom:4px}
   .nome{grid-column:1/-1}
   input{width:100%;font:inherit;font-size:16px;color:var(--text);background:var(--field);
@@ -47,7 +47,7 @@
   input::placeholder{color:var(--ph)}
   input:focus{outline:none;border-color:var(--num);box-shadow:0 0 0 3px rgba(254,209,61,.35)}
   button{font:inherit;cursor:pointer;border:0;border-radius:var(--r-btn)}
-  .add{background:var(--pri-bg);color:var(--pri-fg);font-weight:600;padding:10px 16px;align-self:end;height:41px}
+  .add{background:var(--pri-bg);color:var(--pri-fg);font-weight:500;font-size:24px;line-height:1;padding:0;height:41px}
   .add:hover{filter:brightness(1.15)}
   .tabs{display:inline-flex;gap:2px;margin:18px 0 10px;padding:3px;background:var(--track);border-radius:var(--r-cartao)}
   .tabs button{background:transparent;color:var(--muted);padding:6px 12px;font-size:13px;font-weight:500}
@@ -88,6 +88,21 @@
   .box button{padding:8px 14px;font-weight:500}
   .sec{background:var(--surface);color:var(--text);border:1px solid var(--divider) !important}
   .dang{background:var(--red);color:#fff}
+  .dica{color:var(--muted);font-size:12px;margin:8px 2px 0}
+  .info,.preco{cursor:pointer}
+  .cp{font-size:12px;color:var(--muted);margin-top:2px}
+  .cp.sobe{color:var(--red)} .cp.desce{color:#05690d}
+  @media (prefers-color-scheme: dark){ .cp.desce{color:#4cc38a} }
+  .sempreco{background:transparent;border:1px dashed var(--ph) !important;color:var(--muted);font-size:13px;font-weight:500;padding:6px 10px;white-space:nowrap}
+  #ed .box h2{font-size:16px;margin:0 0 12px}
+  #ed .box input{margin-bottom:10px}
+  .dois{display:grid;grid-template-columns:80px 1fr;gap:8px}
+  .comp{font-size:13px;color:var(--muted);min-height:18px;margin:-2px 0 10px}
+  .comp.sobe{color:var(--red)} .comp.desce{color:#05690d}
+  @media (prefers-color-scheme: dark){ .comp.desce{color:#4cc38a} }
+  .marca{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);margin:0 0 14px}
+  .marca input{width:18px;height:18px;margin:0;accent-color:var(--pri-bg)}
+  .pri{background:var(--pri-bg);color:var(--pri-fg)}
 </style>
 </head>
 <body>
@@ -98,11 +113,11 @@
   </div>
 
   <form id="f" autocomplete="off">
-    <div class="nome"><label for="nome">Item</label><input id="nome" placeholder="Ex.: Arroz 5 kg" required></div>
-    <div><label for="qtd">Qtd.</label><input id="qtd" type="number" inputmode="decimal" min="0" step="any" value="1"></div>
-    <div><label for="preco">Preço (un.)</label><input id="preco" type="text" inputmode="decimal" placeholder="R$ 0,00"></div>
-    <button class="add" type="submit">Adicionar</button>
+    <input id="nome" placeholder="Adicionar item (ex.: Arroz 5 kg)" aria-label="Item" required>
+    <input id="qtd" type="number" inputmode="decimal" min="0" step="any" value="1" aria-label="Quantidade">
+    <button class="add" type="submit" aria-label="Adicionar">+</button>
   </form>
+  <div class="dica">No mercado, toque no item para colocar o preço.</div>
 
   <div class="tabs">
     <button data-f="todos" class="on">Todos</button>
@@ -131,56 +146,124 @@
   </div>
 </div>
 
+<div class="modal" id="ed">
+  <form class="box" id="edF" autocomplete="off">
+    <h2>Editar item</h2>
+    <label for="eNome">Item</label>
+    <input id="eNome" required>
+    <div class="dois">
+      <div><label for="eQtd">Qtd.</label><input id="eQtd" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div><label for="ePreco">Preço (un.)</label><input id="ePreco" type="text" inputmode="decimal" placeholder="R$ 0,00"></div>
+    </div>
+    <div class="comp" id="eComp"></div>
+    <label class="marca"><input type="checkbox" id="eOk"> Já peguei este</label>
+    <div class="row"><button type="button" class="sec" id="eNo">Cancelar</button><button type="submit" class="pri">Salvar</button></div>
+  </form>
+</div>
+
 <script>
-const KEY = 'lista-compras-v1';
-let itens = [], filtro = 'todos';
+const KEY = 'lista-compras-v1', KHIST = 'lista-compras-precos-v1';
+let itens = [], hist = {}, filtro = 'todos', editando = null;
 try { itens = JSON.parse(localStorage.getItem(KEY)) || []; } catch(e) {}
-const salvar = () => { try { localStorage.setItem(KEY, JSON.stringify(itens)); } catch(e) {} };
+try { hist = JSON.parse(localStorage.getItem(KHIST)) || {}; } catch(e) {}
+const salvar = () => { try { localStorage.setItem(KEY, JSON.stringify(itens)); localStorage.setItem(KHIST, JSON.stringify(hist)); } catch(e) {} };
 const brl = v => v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 const num = s => { s = String(s||'').replace(/[^\d,.-]/g,''); if (s.includes(',')) s = s.replace(/\./g,'').replace(',','.'); return parseFloat(s) || 0; };
+const chave = n => n.trim().toLowerCase();
 const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const $ = id => document.getElementById(id);
 
+// diferença do preço atual para o da última compra
+function compara(i){
+  const h = hist[chave(i.nome)];
+  const base = i.ant != null ? i.ant : (h && h.id !== i.id ? h.preco : null);
+  if (base == null) return null;
+  if (!i.preco) return {t:`Última vez: ${brl(base)}`, c:''};
+  const d = i.preco - base;
+  if (Math.abs(d) < 0.005) return {t:`Mesmo preço da última vez`, c:''};
+  const pct = Math.round(Math.abs(d)/base*100);
+  return d > 0 ? {t:`▲ ${brl(d)} (${pct}%) mais caro que da última vez`, c:'sobe'} : {t:`▼ ${brl(-d)} (${pct}%) mais barato que da última vez`, c:'desce'};
+}
+
 function render(){
   const vis = itens.filter(i => filtro==='todos' || (filtro==='ok' ? i.ok : !i.ok));
-  $('lista').innerHTML = vis.length ? vis.map(i => {
-    const sub = i.preco * i.qtd;
+  $('lista').innerHTML = vis.map(i => {
+    const sub = i.preco * i.qtd, cp = compara(i);
     return `<li class="${i.ok?'done':''}" data-id="${i.id}">
       <button class="chk" data-a="chk" aria-label="Marcar como comprado">
         <svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 8.5l3 3 7-7" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <div class="info"><div class="n">${esc(i.nome)}</div>
-        <div class="meta">${i.qtd} × ${i.preco ? brl(i.preco) : 'sem preço'}</div></div>
-      <div class="preco">${i.preco ? brl(sub) : '—'}</div>
+      <div class="info" data-a="ed"><div class="n">${esc(i.nome)}</div>
+        <div class="meta">${i.qtd} ${i.preco ? '× ' + brl(i.preco) : (i.qtd==1?'unidade':'unidades')}</div>
+        ${cp ? `<div class="cp ${cp.c}">${cp.t}</div>` : ''}</div>
+      ${i.preco ? `<div class="preco" data-a="ed">${brl(sub)}</div>` : `<button class="sempreco" data-a="ed">+ preço</button>`}
       <button class="del" data-a="del" aria-label="Excluir"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
     </li>`;
-  }).join('') : '';
+  }).join('');
   $('vazio').hidden = !!vis.length;
   $('vazio').innerHTML = itens.length ? 'Nada aqui neste filtro.' : 'Sua lista está vazia.<br>Adicione o primeiro item acima.';
 
   const total = itens.reduce((s,i)=>s+i.preco*i.qtd,0);
   const ok = itens.filter(i=>i.ok).reduce((s,i)=>s+i.preco*i.qtd,0);
-  const nOk = itens.filter(i=>i.ok).length;
+  const nOk = itens.filter(i=>i.ok).length, nSem = itens.filter(i=>!i.preco).length;
   $('tTotal').textContent = brl(total);
   $('tOk').textContent = brl(ok);
   $('tFalta').textContent = brl(total-ok);
   $('prog').style.width = itens.length ? (nOk/itens.length*100)+'%' : 0;
-  $('resumo').textContent = itens.length ? `${nOk} de ${itens.length} itens comprados` : 'Lista de compras. Funciona sem internet.';
+  $('resumo').textContent = itens.length ? `${nOk} de ${itens.length} itens no carrinho` + (nSem ? ` · ${nSem} sem preço` : '') : 'Lista de compras. Funciona sem internet.';
   $('limpar').hidden = !nOk;
+}
+
+// quando o item vai pro carrinho com preço, guarda o preço para comparar na próxima compra
+function guardaPreco(i){
+  if (!i.ok || !i.preco) return;
+  const k = chave(i.nome), h = hist[k];
+  if (h && h.id !== i.id && i.ant == null) i.ant = h.preco;
+  hist[k] = {preco:i.preco, id:i.id};
 }
 
 $('f').addEventListener('submit', e => {
   e.preventDefault();
   const nome = $('nome').value.trim(); if (!nome) return;
-  itens.unshift({ id: Date.now()+''+Math.random(), nome, qtd: num($('qtd').value) || 1, preco: num($('preco').value), ok:false });
+  itens.push({ id: Date.now()+''+Math.random(), nome, qtd: num($('qtd').value) || 1, preco: 0, ok:false });
   salvar(); render();
-  $('nome').value=''; $('preco').value=''; $('qtd').value='1'; $('nome').focus();
+  $('nome').value=''; $('qtd').value='1'; $('nome').focus();
+});
+
+function abrirEdicao(it){
+  editando = it;
+  $('eNome').value = it.nome; $('eQtd').value = it.qtd;
+  $('ePreco').value = it.preco ? it.preco.toFixed(2).replace('.',',') : '';
+  $('eOk').checked = it.preco ? it.ok : true;
+  atualizaComp();
+  $('ed').classList.add('show');
+  setTimeout(() => $('ePreco').focus(), 50);
+}
+function atualizaComp(){
+  if (!editando) return;
+  const cp = compara({...editando, nome:$('eNome').value, preco:num($('ePreco').value)});
+  $('eComp').className = 'comp ' + (cp ? cp.c : '');
+  $('eComp').textContent = cp ? cp.t : '';
+}
+['ePreco','eNome'].forEach(id => $(id).addEventListener('input', atualizaComp));
+$('eNo').onclick = () => { $('ed').classList.remove('show'); editando = null; };
+$('edF').addEventListener('submit', e => {
+  e.preventDefault();
+  const it = editando; if (!it) return;
+  it.nome = $('eNome').value.trim() || it.nome;
+  it.qtd = num($('eQtd').value) || 1;
+  it.preco = num($('ePreco').value);
+  it.ok = $('eOk').checked;
+  guardaPreco(it);
+  salvar(); render();
+  $('ed').classList.remove('show'); editando = null;
 });
 
 $('lista').addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
+  const b = e.target.closest('[data-a]'); if (!b) return;
   const id = b.closest('li').dataset.id, it = itens.find(i=>i.id===id);
-  if (b.dataset.a==='chk') it.ok = !it.ok;
+  if (b.dataset.a==='ed') return abrirEdicao(it);
+  if (b.dataset.a==='chk') { it.ok = !it.ok; guardaPreco(it); }
   if (b.dataset.a==='del') itens = itens.filter(i=>i.id!==id);
   salvar(); render();
 });
@@ -192,7 +275,7 @@ document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
 });
 
 $('limpar').onclick = () => {
-  $('mTxt').textContent = `Remover ${itens.filter(i=>i.ok).length} item(ns) já comprado(s)?`;
+  $('mTxt').textContent = `Remover ${itens.filter(i=>i.ok).length} item(ns) já comprado(s)? Os preços ficam guardados para comparar na próxima compra.`;
   $('modal').classList.add('show');
 };
 $('mNo').onclick = () => $('modal').classList.remove('show');
