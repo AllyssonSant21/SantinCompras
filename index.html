@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E1525">
+<meta name="apple-mobile-web-app-title" content="Santin Compras">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icone-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Santin Compras</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* estética do Pra Onde Foi?: marinho + dourado + branco, Inter, bordas finas, cantos 6–8px */
+  :root{
+    --bg:#ffffff; --surface:#ffffff; --field:#ffffff; --text:#1a1f36; --muted:#697386; --ph:#8792a2;
+    --divider:#e3e8ee; --track:#ebeef1;
+    --navy:#0E1525; --navy-h:#1c2740; --gold:#FED13D; --num:#b8860b; --red:#c0123c;
+    --pri-bg:var(--navy); --pri-fg:#fff; --pri-ic:var(--gold);
+    --r-btn:6px; --r-campo:6px; --r-cartao:8px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#141414; --surface:#1e1e1e; --field:#161616; --text:#f2f2f0; --muted:#a3a3a0; --ph:#8c8c88;
+      --divider:rgba(255,255,255,.10); --track:rgba(255,255,255,.08);
+      --num:#FED13D; --red:#ff8a8d;
+      --pri-bg:var(--gold); --pri-fg:var(--navy); --pri-ic:var(--navy); }
+  }
+  *{box-sizing:border-box}
+  html,body{overflow-x:clip}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:15px/1.45 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:560px;margin:0 auto;padding:calc(20px + env(safe-area-inset-top)) 16px 150px}
+  .topo{display:flex;align-items:center;gap:12px;margin:4px 0 18px}
+  .ic{width:40px;height:40px;border-radius:var(--r-cartao);background:var(--pri-bg);color:var(--pri-ic);display:grid;place-items:center;flex:none}
+  h1{font-size:20px;font-weight:700;margin:0;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:13px}
+  form{background:var(--surface);border:1px solid var(--divider);border-radius:var(--r-cartao);
+    padding:14px;display:grid;grid-template-columns:72px 1fr auto;gap:8px}
+  label{font-size:12px;font-weight:500;color:var(--muted);display:block;margin-bottom:4px}
+  .nome{grid-column:1/-1}
+  input{width:100%;font:inherit;font-size:16px;color:var(--text);background:var(--field);
+    border:1px solid var(--divider);border-radius:var(--r-campo);padding:9px 10px;min-width:0}
+  input::placeholder{color:var(--ph)}
+  input:focus{outline:none;border-color:var(--num);box-shadow:0 0 0 3px rgba(254,209,61,.35)}
+  button{font:inherit;cursor:pointer;border:0;border-radius:var(--r-btn)}
+  .add{background:var(--pri-bg);color:var(--pri-fg);font-weight:600;padding:10px 16px;align-self:end;height:41px}
+  .add:hover{filter:brightness(1.15)}
+  .tabs{display:inline-flex;gap:2px;margin:18px 0 10px;padding:3px;background:var(--track);border-radius:var(--r-cartao)}
+  .tabs button{background:transparent;color:var(--muted);padding:6px 12px;font-size:13px;font-weight:500}
+  .tabs button.on{background:var(--pri-bg);color:var(--pri-fg)}
+  ul{list-style:none;padding:0;margin:0;background:var(--surface);border:1px solid var(--divider);border-radius:var(--r-cartao);overflow:hidden}
+  ul:empty{display:none}
+  li{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--divider)}
+  li:first-child{border-top:0}
+  .chk{flex:none;width:24px;height:24px;border-radius:5px;border:1.5px solid var(--ph);
+    background:transparent;display:grid;place-items:center;padding:0}
+  .chk svg{opacity:0}
+  .chk path{stroke:var(--pri-ic)}
+  li.done .chk{background:var(--pri-bg);border-color:var(--pri-bg)}
+  li.done .chk svg{opacity:1}
+  .info{flex:1;min-width:0}
+  .n{font-weight:500;overflow-wrap:anywhere}
+  .meta{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+  li.done .n{text-decoration:line-through;color:var(--muted)}
+  .preco{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+  li.done .preco{color:var(--muted)}
+  .del{background:transparent;color:var(--ph);width:30px;height:30px;display:grid;place-items:center}
+  .del:hover{color:var(--red);background:var(--track)}
+  .vazio{text-align:center;color:var(--muted);padding:36px 10px;border:1px dashed var(--divider);border-radius:var(--r-cartao);font-size:14px}
+  .limpar{background:transparent;color:var(--red);font-size:13px;font-weight:500;padding:10px 0}
+  .total{position:fixed;left:0;right:0;bottom:0;background:var(--surface);
+    border-top:1px solid var(--divider);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+  .total .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .total small{display:block;color:var(--muted);font-size:12px;font-weight:500}
+  .total b{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+  .total .g b{color:var(--num)}
+  .bar{grid-column:1/-1;height:6px;background:var(--track);border-radius:3px;overflow:hidden}
+  .bar i{display:block;height:100%;background:#e0a922;width:0;transition:width .3s}
+  .modal{position:fixed;inset:0;background:rgba(20,20,20,.42);display:none;align-items:center;justify-content:center;padding:20px}
+  .modal.show{display:flex}
+  .box{background:var(--surface);border:1px solid var(--divider);border-radius:var(--r-cartao);padding:18px;max-width:320px;width:100%;box-shadow:0 10px 30px rgba(20,20,20,.18)}
+  .box p{margin:0 0 14px}
+  .box .row{display:flex;gap:8px;justify-content:flex-end}
+  .box button{padding:8px 14px;font-weight:500}
+  .sec{background:var(--surface);color:var(--text);border:1px solid var(--divider) !important}
+  .dang{background:var(--red);color:#fff}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topo">
+    <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h3l2.6 12.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L21 8H6"/></svg></div>
+    <div><h1>Santin Compras</h1><div class="sub" id="resumo">Lista de compras. Funciona sem internet.</div></div>
+  </div>
+
+  <form id="f" autocomplete="off">
+    <div class="nome"><label for="nome">Item</label><input id="nome" placeholder="Ex.: Arroz 5 kg" required></div>
+    <div><label for="qtd">Qtd.</label><input id="qtd" type="number" inputmode="decimal" min="0" step="any" value="1"></div>
+    <div><label for="preco">Preço (un.)</label><input id="preco" type="text" inputmode="decimal" placeholder="R$ 0,00"></div>
+    <button class="add" type="submit">Adicionar</button>
+  </form>
+
+  <div class="tabs">
+    <button data-f="todos" class="on">Todos</button>
+    <button data-f="falta">Faltam</button>
+    <button data-f="ok">Comprados</button>
+  </div>
+
+  <ul id="lista"></ul>
+  <div class="vazio" id="vazio" hidden></div>
+  <button class="limpar" id="limpar" hidden>Remover itens comprados</button>
+</div>
+
+<div class="total">
+  <div class="in">
+    <div class="bar"><i id="prog"></i></div>
+    <div><small>Total da lista</small><b id="tTotal">R$ 0,00</b></div>
+    <div class="g"><small>No carrinho</small><b id="tOk">R$ 0,00</b></div>
+    <div><small>Falta</small><b id="tFalta">R$ 0,00</b></div>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="box">
+    <p id="mTxt"></p>
+    <div class="row"><button class="sec" id="mNo">Cancelar</button><button class="dang" id="mYes">Remover</button></div>
+  </div>
+</div>
+
+<script>
+const KEY = 'lista-compras-v1';
+let itens = [], filtro = 'todos';
+try { itens = JSON.parse(localStorage.getItem(KEY)) || []; } catch(e) {}
+const salvar = () => { try { localStorage.setItem(KEY, JSON.stringify(itens)); } catch(e) {} };
+const brl = v => v.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+const num = s => { s = String(s||'').replace(/[^\d,.-]/g,''); if (s.includes(',')) s = s.replace(/\./g,'').replace(',','.'); return parseFloat(s) || 0; };
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $ = id => document.getElementById(id);
+
+function render(){
+  const vis = itens.filter(i => filtro==='todos' || (filtro==='ok' ? i.ok : !i.ok));
+  $('lista').innerHTML = vis.length ? vis.map(i => {
+    const sub = i.preco * i.qtd;
+    return `<li class="${i.ok?'done':''}" data-id="${i.id}">
+      <button class="chk" data-a="chk" aria-label="Marcar como comprado">
+        <svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 8.5l3 3 7-7" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="info"><div class="n">${esc(i.nome)}</div>
+        <div class="meta">${i.qtd} × ${i.preco ? brl(i.preco) : 'sem preço'}</div></div>
+      <div class="preco">${i.preco ? brl(sub) : '—'}</div>
+      <button class="del" data-a="del" aria-label="Excluir"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+    </li>`;
+  }).join('') : '';
+  $('vazio').hidden = !!vis.length;
+  $('vazio').innerHTML = itens.length ? 'Nada aqui neste filtro.' : 'Sua lista está vazia.<br>Adicione o primeiro item acima.';
+
+  const total = itens.reduce((s,i)=>s+i.preco*i.qtd,0);
+  const ok = itens.filter(i=>i.ok).reduce((s,i)=>s+i.preco*i.qtd,0);
+  const nOk = itens.filter(i=>i.ok).length;
+  $('tTotal').textContent = brl(total);
+  $('tOk').textContent = brl(ok);
+  $('tFalta').textContent = brl(total-ok);
+  $('prog').style.width = itens.length ? (nOk/itens.length*100)+'%' : 0;
+  $('resumo').textContent = itens.length ? `${nOk} de ${itens.length} itens comprados` : 'Lista de compras. Funciona sem internet.';
+  $('limpar').hidden = !nOk;
+}
+
+$('f').addEventListener('submit', e => {
+  e.preventDefault();
+  const nome = $('nome').value.trim(); if (!nome) return;
+  itens.unshift({ id: Date.now()+''+Math.random(), nome, qtd: num($('qtd').value) || 1, preco: num($('preco').value), ok:false });
+  salvar(); render();
+  $('nome').value=''; $('preco').value=''; $('qtd').value='1'; $('nome').focus();
+});
+
+$('lista').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const id = b.closest('li').dataset.id, it = itens.find(i=>i.id===id);
+  if (b.dataset.a==='chk') it.ok = !it.ok;
+  if (b.dataset.a==='del') itens = itens.filter(i=>i.id!==id);
+  salvar(); render();
+});
+
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+  filtro = b.dataset.f;
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on', x===b));
+  render();
+});
+
+$('limpar').onclick = () => {
+  $('mTxt').textContent = `Remover ${itens.filter(i=>i.ok).length} item(ns) já comprado(s)?`;
+  $('modal').classList.add('show');
+};
+$('mNo').onclick = () => $('modal').classList.remove('show');
+$('mYes').onclick = () => { itens = itens.filter(i=>!i.ok); salvar(); render(); $('modal').classList.remove('show'); };
+
+render();
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
